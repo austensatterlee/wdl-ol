@@ -65,17 +65,13 @@ inline IMouseInfo IGraphicsWin::GetMouseInfo(LPARAM lParam, WPARAM wParam)
   IMouseInfo info;
   info.x = mMouseX = GET_X_LPARAM(lParam) / GetScale();
   info.y = mMouseY = GET_Y_LPARAM(lParam) / GetScale();
-  info.ms = IMouseMod((wParam & MK_LBUTTON),
-    (wParam & MK_RBUTTON),
-    (wParam & MK_SHIFT),
-    (wParam & MK_CONTROL),
-
+  info.ms = IMouseMod((wParam & MK_LBUTTON), (wParam & MK_RBUTTON), (wParam & MK_SHIFT), (wParam & MK_CONTROL),
 #ifdef AAX_API
     GetAsyncKeyState(VK_MENU) < 0
 #else
     GetKeyState(VK_MENU) < 0
 #endif
-      );
+  );
   return info;
 }
 
@@ -152,12 +148,12 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
                 else
                 {
                   v = atof(txt);
-                  if (pParam->GetDisplayIsNegated())
+                  if (pParam->GetNegateDisplay())
                   {
                     v = -v;
                   }
                 }
-                pGraphics->mEdControl->SetValueFromUserInput(pParam->GetNormalized(v));
+                pGraphics->mEdControl->SetValueFromUserInput(pParam->ToNormalized(v));
               }
               else
               {
@@ -585,28 +581,30 @@ void IGraphicsWin::Resize(int w, int h, float scale)
   }
 }
 
-void IGraphicsWin::HideMouseCursor()
+void IGraphicsWin::HideMouseCursor(bool hide)
 {
-  if (!mCursorHidden)
+  if(hide)
   {
-    POINT p;
-    GetCursorPos(&p);
-
-    mHiddenMousePointX = p.x;
-    mHiddenMousePointY = p.y;
-
-    ShowCursor(false);
-    mCursorHidden=true;
+    if (mCursorHidden)
+    {
+      SetCursorPos(mHiddenMousePointX, mHiddenMousePointY);
+      ShowCursor(true);
+      mCursorHidden = false;
+    }
   }
-}
-
-void IGraphicsWin::ShowMouseCursor()
-{
-  if (mCursorHidden)
+  else
   {
-    SetCursorPos(mHiddenMousePointX, mHiddenMousePointY);
-    ShowCursor(true);
-    mCursorHidden=false;
+    if (!mCursorHidden)
+    {
+      POINT p;
+      GetCursorPos(&p);
+      
+      mHiddenMousePointX = p.x;
+      mHiddenMousePointY = p.y;
+      
+      ShowCursor(false);
+      mCursorHidden = true;
+    }
   }
 }
 
@@ -722,7 +720,7 @@ HWND IGraphicsWin::GetMainWnd()
       }
       GetWndClassName(mMainWnd, &mMainWndClassName);
     }
-    else if (CSTR_NOT_EMPTY(mMainWndClassName.Get()))
+    else if (CStringHasContents(mMainWndClassName.Get()))
     {
       mPID = GetCurrentProcessId();
       EnumWindows(FindMainWindow, (LPARAM) this);
@@ -1111,7 +1109,7 @@ void IGraphicsWin::PromptForFile(WDL_String& filename, WDL_String& path, EFileAc
   ofn.lpstrInitialDir = dirCStr;
   ofn.Flags = OFN_PATHMUSTEXIST;
     
-  if (CSTR_NOT_EMPTY(extensions))
+  if (CStringHasContents(extensions))
   {
     wchar_t extStr[256];
     wchar_t defExtStr[16];
@@ -1184,6 +1182,40 @@ void IGraphicsWin::PromptForFile(WDL_String& filename, WDL_String& path, EFileAc
   {
     filename.Set("");
   }
+}
+
+void IGraphicsWin::PromptForDirectory(WDL_String& dir)
+{
+  BROWSEINFO bi;
+  memset(&bi, 0, sizeof(bi));
+  
+  bi.ulFlags   = BIF_USENEWUI;
+  bi.hwndOwner = mPlugWnd;
+  bi.lpszTitle = "Choose a Directory";
+  
+  // must call this if using BIF_USENEWUI
+  ::OleInitialize(NULL);
+  LPITEMIDLIST pIDL = ::SHBrowseForFolder(&bi);
+  
+  if(pIDL != NULL)
+  {
+    char buffer[_MAX_PATH] = {'\0'};
+    
+    if(::SHGetPathFromIDList(pIDL, buffer) != 0)
+    {
+      dir.Set(buffer);
+      dir.Append("\\");
+    }
+    
+    // free the item id list
+    CoTaskMemFree(pIDL);
+  }
+  else
+  {
+    dir.Set("");
+  }
+  
+  ::OleUninitialize();
 }
 
 UINT_PTR CALLBACK CCHookProc(HWND hdlg, UINT uiMsg, WPARAM wParam, LPARAM lParam)
@@ -1371,7 +1403,7 @@ BOOL IGraphicsWin::EnumResNameProc(HANDLE module, LPCTSTR type, LPTSTR name, LON
 
 bool IGraphicsWin::OSFindResource(const char* name, const char* type, WDL_String& result)
 {
-  if (CSTR_NOT_EMPTY(name))
+  if (CStringHasContents(name))
   {
     WDL_String search(name);
     WDL_String typeUpper(type);
@@ -1408,6 +1440,6 @@ bool IGraphicsWin::OSFindResource(const char* name, const char* type, WDL_String
 #include "nanovg.c"
 //#include "nanovg_mtl.m"
 #else
-#include "IGraphicsLice.cpp"
+#include "IGraphicsCairo.cpp"
 #endif
 #endif

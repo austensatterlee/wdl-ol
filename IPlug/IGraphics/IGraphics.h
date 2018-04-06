@@ -106,7 +106,7 @@ public:
    * @param pBlend Optional blend method, see IBlend documentation */
   virtual void DrawRotatedMask(IBitmap& base, IBitmap& mask, IBitmap& top, int x, int y, double angle, const IBlend* pBlend = 0) = 0;
 
-  /** Fill a point with a color. On 1:1 screens a point is a pixel. \todo is this correct? what about high DPI displays
+  /** Fill a rectangle corresponding to a pixel on a 1:! screen with a color
    * @param color The color to fill the point with
    * @param x The X coordinate in the graphics context at which to draw
    * @param y The Y coordinate in the graphics context at which to draw
@@ -123,6 +123,16 @@ public:
    * @param thickness Optional line thickness */
   virtual void DrawLine(const IColor& color, float x1, float y1, float x2, float y2, const IBlend* pBlend = 0, float thickness = 1.f) = 0;
 
+  /** Draw a dotted line to the graphics context
+   * @param color The color to draw the shape with
+   * @param x1 The X coordinate in the graphics context of the start of the line
+   * @param y1 The Y coordinate in the graphics context of the start of the line
+   * @param x2 The X coordinate in the graphics context of the end of the line
+   * @param y2 The Y coordinate in the graphics context of the end of the line
+   * @param pBlend Optional blend method, see IBlend documentation
+   * @param thickness Optional line thickness */
+  virtual void DrawDottedLine(const IColor& color, float x1, float y1, float x2, float y2, const IBlend* pBlend = 0, float thickness = 1.f) = 0;
+  
   /** Draw a triangle to the graphics context
    * @param color The color to draw the shape with
    * @param x1 The X coordinate in the graphics context of the first vertex
@@ -188,13 +198,13 @@ public:
    * @param thickness Optional line thickness */
   virtual void DrawEllipse(const IColor& color, const IRECT& bounds, const IBlend* pBlend = 0, float thickness = 1.f) {};
   
-  /** Draw an ellipse within a rectangular region of the graphics context
+  /** Draw an ellipse around a central point given two radii and an angle of orientation
    * @param color The color to draw the shape with
    * @param x The X coordinate in the graphics context of the centre of the ellipse
    * @param y The Y coordinate in the graphics context of the centre of the ellipse
-   * @param r1 \todo
-   * @param r2 \todo
-   * @param angle \todo
+   * @param r1 The radius of the ellipse along the line found by rotating the x-axis by the angle
+   * @param r2 The radius of the ellipse along the line found by rotating the y-axis by the angle
+   * @param angle The angle rotates the radii r1 and r2 clockwise in degrees to adjust the orientation
    * @param pBlend Optional blend method, see IBlend documentation
    * @param thickness Optional line thickness */
   virtual void DrawEllipse(const IColor& color, float x, float y, float r1, float r2, float angle = 0.0, const IBlend* pBlend = 0, float thickness = 1.f) {};
@@ -267,9 +277,9 @@ public:
    * @param color The color to draw the shape with
    * @param x The X coordinate in the graphics context of the centre of the ellipse
    * @param y The Y coordinate in the graphics context of the centre of the ellipse
-   * @param r1 \todo
-   * @param r2 \todo
-   * @param angle \todo
+   * @param r1 The radius of the ellipse along the line found by rotating the x-axis by the angle
+   * @param r2 The radius of the ellipse along the line found by rotating the y-axis by the angle
+   * @param angle The angle rotates the radii r1 and r2 clockwise in degrees to adjust the orientation
    * @param pBlend Optional blend method, see IBlend documentation */
   virtual void FillEllipse(const IColor& color, float x, float y, float r1, float r2, float angle = 0.0, const IBlend* pBlend = 0) {};
   
@@ -319,13 +329,6 @@ public:
 
   /** @return A CString representing the Drawing API in use e.g. "LICE" */
   virtual const char* GetDrawingAPIStr() = 0;
-
-  /** This is overridden in some IGraphics drawing classes to clip drawing to a rectangular region
-   * @param bounds The rectangular region to clip  */
-  inline virtual void ClipRegion(const IRECT& bounds) {};
-
-  /** This is overridden in some IGraphics drawing classes so you can reset clipping after drawing a shape */
-  inline virtual void ResetClipRegion() {};
 
 #pragma mark - IGraphics drawing API implementation (bitmap handling)
   virtual IBitmap ScaleBitmap(const IBitmap& srcbitmap, const char* cacheName, int targetScale);
@@ -446,12 +449,20 @@ public:
   virtual void PathStroke(const IPattern& pattern, float thickness, const IStrokeOptions& options = IStrokeOptions(), const IBlend* pBlend = 0) {}
   virtual void PathFill(const IPattern& pattern, const IFillOptions& options = IFillOptions(), const IBlend* pBlend = 0) {}
 
-#pragma mark - IGraphics platform implementation
-  /** Call to hide the mouse cursor */
-  virtual void HideMouseCursor() {};
+private:
+    
+  /** This is overridden in some IGraphics drawing classes to clip drawing to a rectangular region
+   * @param bounds The rectangular region to clip  */
+  inline virtual void ClipRegion(const IRECT& bounds) {};
+    
+  /** This is overridden in some IGraphics drawing classes so you can reset clipping after drawing a shape */
+  inline virtual void ResetClipRegion() {};
 
-  /** Call to show the mouse cursor when it is hidden */
-  virtual void ShowMouseCursor() {};
+public:
+    
+#pragma mark - IGraphics platform implementation
+  /** Call to hide the mouse cursor */ 
+  virtual void HideMouseCursor(bool hide = true, bool returnToStartPosition = true) {};
 
   /** Force move the mouse cursor to a specific position in the graphics context
    * @param x New X position in pixels
@@ -514,6 +525,10 @@ public:
    * @param action Determines whether this is an open dialog or a save dialog
    * @param extensions A comma separated CString list of file extensions to filter in the dialog (e.g. “.wav, .aif” \todo check */
   virtual void PromptForFile(WDL_String& filename, WDL_String& path, EFileAction action = kFileOpen, const char* extensions = 0) = 0;
+
+  /** Create a platform file prompt dialog to choose a directory path for opening/saving a directory. NOTE: this method will block the main thread
+   * @param dir Non const WDL_String reference specifying the directory path. Set this prior to calling the method for save dialogs, to provide a default path. For load dialogs, on successful selection of a directory this will get set to the full path. */
+  virtual void PromptForDirectory(WDL_String& dir) = 0;
 
   /** Create a platform color chooser dialog. NOTE: this method will block the main thread
    * @param color When a color is chosen the IColor referenced will be updated with the new color
@@ -760,7 +775,7 @@ public:
   /** @param enable Set \c true if you want to handle mouse over messages. Note: this may increase the amount CPU usage if you redraw on mouse overs etc */
   void HandleMouseOver(bool canHandle) { mHandleMouseOver = canHandle; }
 
-  /***/
+  /** Used to tell the graphics context to stop tracking mouse interaction with a control \todo internal only? */
   void ReleaseMouseCapture();
 
   /** @param enable Set \c true to enable tool tips when the user mouses over a control */
@@ -857,8 +872,6 @@ public:
 #endif
   
 protected:
-  IDelegate& mDelegate;
-
   virtual APIBitmap* LoadAPIBitmap(const WDL_String& resourcePath, int scale) = 0;
   //virtual void* CreateAPIBitmap(int w, int h) = 0;
   virtual APIBitmap* ScaleAPIBitmap(const APIBitmap* pBitmap, int scale) = 0;
@@ -867,12 +880,15 @@ protected:
   bool SearchImageResource(const char* name, const char* type, WDL_String& result, int targetScale, int& sourceScale);
   APIBitmap* SearchBitmapInCache(const char* name, int targetScale, int& sourceScale);
 
+protected:
+  IDelegate& mDelegate;
   WDL_PtrList<IControl> mControls;
   IRECT mDrawRECT;
   void* mPlatformContext = nullptr;
   bool mCursorHidden = false;
   bool mTabletInput = false;
-
+  float mCursorX = -1.f;
+  float mCursorY = -1.f;
 private:
   int GetMouseControlIdx(float x, float y, bool mo = false);
 

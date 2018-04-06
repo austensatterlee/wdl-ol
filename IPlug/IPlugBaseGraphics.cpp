@@ -64,6 +64,8 @@ void IPlugBaseGraphics::SendParameterValueToUIFromAPI(int paramIdx, double value
 
 void IPlugBaseGraphics::PrintDebugInfo() const
 {
+  assert(mGraphics != nullptr);
+
   if(!mGraphics)
     return IPlugBase::PrintDebugInfo();
     
@@ -80,6 +82,8 @@ void IPlugBaseGraphics::PrintDebugInfo() const
 
 void IPlugBaseGraphics::SetControlValueFromDelegate(int controlIdx, double normalizedValue)
 {
+  assert(mGraphics != nullptr);
+
   if (controlIdx >= 0 && controlIdx < mGraphics->NControls())
   {
     mGraphics->GetControl(controlIdx)->SetValueFromDelegate(normalizedValue);
@@ -88,8 +92,10 @@ void IPlugBaseGraphics::SetControlValueFromDelegate(int controlIdx, double norma
 
 void IPlugBaseGraphics::SendParameterValueToUIFromDelegate(int paramIdx, double value, bool normalized)
 {
+  assert(mGraphics != nullptr);
+  
   if (!normalized)
-    value = GetParam(paramIdx)->GetNormalized(value);
+    value = GetParam(paramIdx)->ToNormalized(value);
 
   for (auto c = 0; c < mGraphics->NControls(); c++)
   {
@@ -125,7 +131,9 @@ void IPlugBaseGraphics::SendParameterValueToUIFromDelegate(int paramIdx, double 
 
 void IPlugBaseGraphics::ResizeGraphicsFromUI()
 {
-    mWidth = mGraphics->WindowWidth();
-    mHeight = mGraphics->WindowHeight();
-    ResizeGraphics();
+  assert(mGraphics != nullptr);
+
+  mWidth = mGraphics->WindowWidth();
+  mHeight = mGraphics->WindowHeight();
+  ResizeGraphics();
 }

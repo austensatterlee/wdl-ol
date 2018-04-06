@@ -52,6 +52,16 @@ public:
     PathStroke(color, thickness, IStrokeOptions(), pBlend);
   }
   
+  void DrawDottedLine(const IColor& color, float x1, float y1, float x2, float y2, const IBlend* pBlend, float thickness) override
+  {
+    float dashLength = 2;
+    IStrokeOptions options;
+    options.mDash.SetDash(&dashLength, 0.0, 1);
+    PathMoveTo(x1, y1);
+    PathLineTo(x2, y2);
+    PathStroke(color, thickness, options, pBlend);
+  }
+  
   void DrawTriangle(const IColor& color, float x1, float y1, float x2, float y2, float x3, float y3, const IBlend* pBlend, float thickness) override
   {
     PathTriangle(x1, y1, x2, y2, x3, y3);
@@ -259,8 +269,7 @@ public:
     
     PathStateSave();
     PathTransformTranslate(dest.L, dest.T);
-    ClipRegion(IRECT(0, 0, dest.W(), dest.H()));
-    PathTransformScale(scale, scale);
+    PathTransformScale(scale);
     RenderNanoSVG(svg.mImage);
     PathStateRestore();
   }
@@ -318,6 +327,8 @@ private:
   
   void RenderNanoSVG(NSVGimage* pImage)
   {
+    assert(pImage != nullptr);
+
     for (NSVGshape* pShape = pImage->shapes; pShape; pShape = pShape->next)
     {
       if (!(pShape->flags & NSVG_FLAGS_VISIBLE))

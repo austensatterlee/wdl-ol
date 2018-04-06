@@ -206,7 +206,7 @@ bool IPlugPresetHandler::RestorePreset(int idx)
 
 bool IPlugPresetHandler::RestorePreset(const char* name)
 {
-  if (CSTR_NOT_EMPTY(name))
+  if (CStringHasContents(name))
   {
     int n = mPresets.GetSize();
     for (int i = 0; i < n; ++i)
@@ -241,7 +241,7 @@ void IPlugPresetHandler::ModifyCurrentPreset(const char* name)
 
     GETPLUG->SerializeState(pPreset->mChunk);
 
-    if (CSTR_NOT_EMPTY(name))
+    if (CStringHasContents(name))
     {
       strcpy(pPreset->mName, name);
     }
@@ -335,6 +335,28 @@ void IPlugPresetHandler::DumpPresetSrcCode(const char* filename, const char* par
   }
 }
 
+void IPlugPresetHandler::DumpAllPresetsBlob(const char* filename)
+{
+  FILE* fp = fopen(filename, "w");
+  
+  char buf[MAX_BLOB_LENGTH] = "";
+  IByteChunk chnk;
+  
+  for (int i = 0; i< NPresets(); i++)
+  {
+    IPreset* pPreset = mPresets.Get(i);
+    fprintf(fp, "MakePresetFromBlob(\"%s\", \"", pPreset->mName);
+    
+    chnk.Clear();
+    chnk.PutChunk(&(pPreset->mChunk));
+    wdl_base64encode(chnk.GetBytes(), buf, chnk.Size());
+    
+    fprintf(fp, "%s\", %i, %i);\n", buf, chnk.Size(), pPreset->mChunk.Size());
+  }
+  
+  fclose(fp);
+}
+
 void IPlugPresetHandler::DumpPresetBlob(const char* filename)
 {
   FILE* fp = fopen(filename, "w");
@@ -383,7 +405,7 @@ const int kFXBVersionNum = 2;
 // big endian
 bool IPlugPresetHandler::SaveProgramAsFXP(const char* file)
 {
-  if (CSTR_NOT_EMPTY(file))
+  if (CStringHasContents(file))
   {
     FILE* fp = fopen(file, "wb");
 
@@ -456,7 +478,7 @@ bool IPlugPresetHandler::SaveProgramAsFXP(const char* file)
 
 bool IPlugPresetHandler::SaveBankAsFXB(const char* file)
 {
-  if (CSTR_NOT_EMPTY(file))
+  if (CStringHasContents(file))
   {
     FILE* fp = fopen(file, "wb");
 
@@ -543,7 +565,7 @@ bool IPlugPresetHandler::SaveBankAsFXB(const char* file)
           pos = pPreset->mChunk.Get(&v, pos);
 
           WDL_EndianFloat v32;
-          v32.f = (float) GETPLUG->GetParam(i)->GetNormalized(v);
+          v32.f = (float) GETPLUG->GetParam(i)->ToNormalized(v);
           uint32_t swapped = WDL_bswap32(v32.int32);
           bnk.Put(&swapped);
         }
@@ -561,7 +583,7 @@ bool IPlugPresetHandler::SaveBankAsFXB(const char* file)
 
 bool IPlugPresetHandler::LoadProgramFromFXP(const char* file)
 {
-  if (CSTR_NOT_EMPTY(file))
+  if (CStringHasContents(file))
   {
     FILE* fp = fopen(file, "rb");
 
@@ -652,7 +674,7 @@ bool IPlugPresetHandler::LoadProgramFromFXP(const char* file)
 
 bool IPlugPresetHandler::LoadBankFromFXB(const char* file)
 {
-  if (CSTR_NOT_EMPTY(file))
+  if (CStringHasContents(file))
   {
     FILE* fp = fopen(file, "rb");
 

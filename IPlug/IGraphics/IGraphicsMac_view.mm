@@ -301,6 +301,7 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   r.R = mGraphics->WindowWidth();
   r.B = mGraphics->WindowHeight();
 //  if(mGraphics->IsDirty(r))
+  mGraphics->IsDirty(r); // TEMP TO FORCE UPDATES ON ANIMATION
   mGraphics->Draw(r);
 
   mGraphics->EndFrame();
@@ -324,7 +325,6 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
     mPrevY = *pY;
 
     // Detect tablet input correctly
-
     mGraphics->SetTabletInput(pEvent.subtype == NSTabletPointEventSubtype);
     mGraphics->SetMousePosition(*pX, *pY);
   }
@@ -618,7 +618,7 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   if (c < 0) return @"";
 
   const char* tooltip = mGraphics->GetControl(c)->GetTooltip();
-  return CSTR_NOT_EMPTY(tooltip) ? ToNSString((const char*) tooltip) : @"";
+  return CStringHasContents(tooltip) ? ToNSString((const char*) tooltip) : @"";
 }
 
 - (void) registerToolTip: (IRECT&) bounds

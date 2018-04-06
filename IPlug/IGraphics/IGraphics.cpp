@@ -104,7 +104,7 @@ void IGraphics::SetControlValueFromStringAfterPrompt(IControl& control, const ch
   if (pParam)
   {
     const double v = pParam->StringToValue(str);
-    control.SetValueFromUserInput(pParam->GetNormalized(v));
+    control.SetValueFromUserInput(pParam->ToNormalized(v));
   }
 }
 
@@ -174,8 +174,8 @@ void IGraphics::ClampControl(int paramIdx, double lo, double hi, bool normalized
 
     if (pParam)
     {
-      lo = pParam->GetNormalized(lo);
-      hi = pParam->GetNormalized(hi);
+      lo = pParam->ToNormalized(lo);
+      hi = pParam->ToNormalized(hi);
     }
   }
 
@@ -259,7 +259,7 @@ void IGraphics::PromptUserInput(IControl& control, const IRECT& bounds)
       }
 
       if(CreatePopupMenu(menu, bounds))
-        control.SetValueFromUserInput(pParam->GetNormalized( (double) menu.GetChosenItemIdx() ));
+        control.SetValueFromUserInput(pParam->ToNormalized( (double) menu.GetChosenItemIdx() ));
     }
     // TODO: what if there are Int/Double Params with a display text e.g. -96db = "mute"
     else // type == IParam::kTypeInt || type == IParam::kTypeDouble
@@ -275,7 +275,7 @@ void IGraphics::DrawBitmap(IBitmap& bitmap, const IRECT& bounds, int bmpState, c
   int srcX = 0;
   int srcY = 0;
 
-  bmpState = BOUNDED(bmpState, 1, bitmap.N());
+  bmpState = Clip(bmpState, 1, bitmap.N());
     
   if (bitmap.N() > 1 && bmpState > 1)
   {
@@ -293,7 +293,7 @@ void IGraphics::DrawBitmap(IBitmap& bitmap, const IRECT& bounds, int bmpState, c
 
 void IGraphics::DrawBitmapedText(IBitmap& bitmap, IRECT& bounds, IText& text, IBlend* pBlend, const char* str, bool vCenter, bool multiline, int charWidth, int charHeight, int charOffset)
 {
-  if (CSTR_NOT_EMPTY(str))
+  if (CStringHasContents(str))
   {
     int stringLength = (int) strlen(str);
 
@@ -358,14 +358,14 @@ void IGraphics::DrawBitmapedText(IBitmap& bitmap, IRECT& bounds, IText& text, IB
 
 void IGraphics::DrawVerticalLine(const IColor& color, const IRECT& bounds, float x, const IBlend* pBlend, float thickness)
 {
-  x = BOUNDED(x, 0.0f, 1.0f);
+  x = Clip(x, 0.0f, 1.0f);
   float xi = bounds.L + int(x * (bounds.R - bounds.L));
   return DrawVerticalLine(color, xi, bounds.T, bounds.B, pBlend, thickness);
 }
 
 void IGraphics::DrawHorizontalLine(const IColor& color, const IRECT& bounds, float y, const IBlend* pBlend, float thickness)
 {
-  y = BOUNDED(y, 0.0f, 1.0f);
+  y = Clip(y, 0.0f, 1.0f);
   float yi = bounds.B - (y * (float) (bounds.B - bounds.T));
   return DrawHorizontalLine(color, yi, bounds.L, bounds.R, pBlend, thickness);
 }
@@ -776,6 +776,7 @@ void IGraphics::OnMouseWheel(float x, float y, const IMouseMod& mod, float d)
 void IGraphics::ReleaseMouseCapture()
 {
   mMouseCapture = -1;
+  HideMouseCursor(false);
 }
 
 bool IGraphics::OnKeyDown(float x, float y, int key)
@@ -821,8 +822,8 @@ int IGraphics::GetMouseControlIdx(float x, float y, bool mo)
       else
         allow = !pControl->IsGrayed();
     }
-
-    if (!pControl->IsHidden() && allow && pControl->IsHit(x, y))
+    
+    if (!pControl->IsHidden() && !pControl->GetIgnoreMouse() && allow && pControl->IsHit(x, y))
     {
       return i;
     }
