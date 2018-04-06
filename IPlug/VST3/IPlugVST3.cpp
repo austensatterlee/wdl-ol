@@ -35,7 +35,7 @@ static uint64_t GetAPIBusTypeForChannelIOConfig(int configIdx, ERoute dir, int b
     case 10:return SpeakerArr::k71_2; // aka k91Atmos
     case 16:return SpeakerArr::kAmbi3rdOrderACN;
     default:
-      DBGMSG("do not yet know what to do with here\n");
+      DBGMSG("do not yet know what to do here\n");
       assert(0);
       return SpeakerArr::kEmpty;
   }
@@ -208,10 +208,10 @@ tresult PLUGIN_API IPlugVST3::initialize(FUnknown* context)
 
       UnitID unitID = kRootUnitId;
 
-      const char* paramGroupName = p->GetParamGroupForHost();
+      const char* paramGroupName = p->GetGroupForHost();
 
       if (CStringHasContents(paramGroupName))
-      {        
+      {
         for(int j = 0; j < NParamGroups(); j++)
         {
           if(strcmp(paramGroupName, GetParamGroupName(j)) == 0)
