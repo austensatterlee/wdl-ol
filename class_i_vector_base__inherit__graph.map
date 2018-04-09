@@ -1,0 +1,9 @@
+<map id="IVectorBase" name="IVectorBase">
+<area shape="rect" id="node2" href="$class_i_v_drop_down_list_control.html" title="A vector drop down list. " alt="" coords="149,5,309,32"/>
+<area shape="rect" id="node3" href="$class_i_v_keyboard_control.html" title="IVKeyboardControl" alt="" coords="163,56,295,83"/>
+<area shape="rect" id="node4" href="$class_i_v_knob_control.html" title="A vector knob control drawn using graphics primitves. " alt="" coords="176,107,283,133"/>
+<area shape="rect" id="node5" href="$class_i_v_meter_control.html" title="IVMeterControl" alt="" coords="174,157,285,184"/>
+<area shape="rect" id="node6" href="$class_i_v_slider_control.html" title="IVSliderControl" alt="" coords="174,208,285,235"/>
+<area shape="rect" id="node7" href="$class_i_v_switch_control.html" title="A vector switch control. " alt="" coords="171,259,288,285"/>
+<area shape="rect" id="node8" href="$class_i_v_contact_control.html" title="IVContactControl" alt="" coords="357,259,480,285"/>
+</map>
